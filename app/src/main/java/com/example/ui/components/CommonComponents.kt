@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -570,24 +571,38 @@ fun CustomDropdownField(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
                 modifier = Modifier
+                    .heightIn(max = 360.dp)
                     .background(Color.White)
                     .border(1.dp, CardBorderLight, RoundedCornerShape(12.dp))
             ) {
-                options.forEach { option ->
+                if (options.isEmpty()) {
                     androidx.compose.material3.DropdownMenuItem(
                         text = {
                             Text(
-                                text = option,
-                                color = if (option == selectedValue) VioletAccent else TextOnWhitePrimary,
-                                fontWeight = if (option == selectedValue) FontWeight.Bold else FontWeight.Normal,
+                                text = "No options available",
+                                color = SlateGray,
                                 fontSize = 14.sp
                             )
                         },
-                        onClick = {
-                            onSelectOption(option)
-                            expanded = false
-                        }
+                        onClick = { expanded = false }
                     )
+                } else {
+                    options.forEach { option ->
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = option,
+                                    color = if (option == selectedValue) VioletAccent else TextOnWhitePrimary,
+                                    fontWeight = if (option == selectedValue) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 14.sp
+                                )
+                            },
+                            onClick = {
+                                onSelectOption(option)
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
         }

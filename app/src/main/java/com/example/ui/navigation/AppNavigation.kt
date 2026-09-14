@@ -80,7 +80,8 @@ enum class AppScreen {
     PROMPT_GENERATION,
     IMAGE_GENERATION,
     GENERATED_MCQ_VIEW,
-    QUIZ_INTERFACE
+    QUIZ_INTERFACE,
+    WRITTEN_ANSWER_PRACTICE
 }
 
 enum class NavigationTab(

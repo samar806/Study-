@@ -168,7 +168,7 @@ fun AIMCQTeacherApp() {
                     AppScreen.MCQ_GENERATOR_SETUP -> {
                         com.example.ui.screens.generator.McqGeneratorSetupScreen(
                             onBack = { currentScreen = AppScreen.MAIN_SHELL },
-                            onGenerate = { className, subject, chapter, scope, difficulty, count ->
+                            onGenerate = { className, subject, chapter, scope, specificTopic, difficulty, count ->
                                 currentScreen = AppScreen.GENERATED_MCQ_VIEW
                                 val executeAction: () -> Unit = {
                                     isGenerating = true
@@ -182,6 +182,7 @@ fun AIMCQTeacherApp() {
                                             subject = subject,
                                             topic = chapter,
                                             scope = scope,
+                                            specificTopic = specificTopic,
                                             difficulty = difficulty,
                                             totalCount = count,
                                             onProgress = { current, total ->
@@ -320,6 +321,12 @@ fun AIMCQTeacherApp() {
                             onQuizComplete = { currentScreen = AppScreen.MAIN_SHELL }
                         )
                     }
+
+                    AppScreen.WRITTEN_ANSWER_PRACTICE -> {
+                        com.example.ui.screens.practice.WrittenAnswerPracticeScreen(
+                            onBack = { currentScreen = AppScreen.MAIN_SHELL }
+                        )
+                    }
                 }
             }
         }
@@ -342,6 +349,13 @@ fun MainShellContent(
             HomeScreen(
                 userName = userName,
                 onNavigateScreen = onNavigateScreen,
+                modifier = modifier
+            )
+        }
+
+        NavigationTab.PRACTICE -> {
+            com.example.ui.screens.practice.WrittenAnswerPracticeScreen(
+                onBack = { onNavigateScreen(AppScreen.MAIN_SHELL) },
                 modifier = modifier
             )
         }

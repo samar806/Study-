@@ -1,10 +1,11 @@
-package com.example.ui.screens.generator
+package com.example.ui.screens.practice
 
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,12 +16,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.SnackbarHost
@@ -36,13 +45,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.components.CustomDropdownField
 import com.example.ui.components.FloatingCard
 import com.example.ui.components.GradientButton
 import com.example.ui.components.ImagePreviewModal
@@ -53,73 +62,63 @@ import com.example.ui.components.UploadedPage
 import com.example.ui.components.UploadedPagesSection
 import com.example.ui.theme.CardBorderLight
 import com.example.ui.theme.CardWhite
+import com.example.ui.theme.PrimaryGradient
 import com.example.ui.theme.SlateGray
+import com.example.ui.theme.SuccessGreen
 import com.example.ui.theme.TextOnWhitePrimary
+import com.example.ui.theme.VioletAccent
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun ImageGenerationScreen(
+fun WrittenAnswerPracticeScreen(
     onBack: () -> Unit,
-    onGenerate: (pageDescriptions: List<String>, difficulty: String, count: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Dropdowns
-    var selectedDifficulty by remember { mutableStateOf("Medium") }
-    var selectedMcqCount by remember { mutableStateOf("20") }
-
-    val difficultyOptions = listOf("Easy", "Medium", "Hard", "Very Hard")
-    val countOptions = listOf("10", "15", "20", "25", "50")
-
-    // State management: Single reliable source of truth for uploaded pages
+    // Uploaded handwritten answer pages
     val uploadedPages = remember {
         mutableStateListOf(
             UploadedPage(
-                title = "Page 42",
-                noteSnippet = "Newton's 2nd Law\nF = dp/dt\nF = ma",
+                title = "Answer Page 1",
+                noteSnippet = "Q1. State Newton's Second Law:\nRate of change of momentum is proportional to applied force.\ndp/dt = d(mv)/dt = m(dv/dt) = ma",
                 badgeColor = Color(0xFFE0E7FF),
                 rotationDegrees = 0f
             ),
             UploadedPage(
-                title = "Page 43",
-                noteSnippet = "Free Body Diagram\nNormal force & Friction",
+                title = "Answer Page 2",
+                noteSnippet = "Free Body Diagram & Proof:\nImpulse = Integral(F dt) = change in momentum Δp.\nUnits: N·s or kg·m/s",
                 badgeColor = Color(0xFFFEF3C7),
-                rotationDegrees = 0f
-            ),
-            UploadedPage(
-                title = "Handwritten",
-                noteSnippet = "Practice Problems #1-5\nPulleys & Incline",
-                badgeColor = Color(0xFFDCFCE7),
                 rotationDegrees = 0f
             )
         )
     }
 
-    // Modal and Picker States
     var isPickerOpen by remember { mutableStateOf(false) }
     var pickerTarget by remember { mutableStateOf<PickerTarget>(PickerTarget.AddNew) }
     var previewingPageId by remember { mutableStateOf<String?>(null) }
+    var isEvaluating by remember { mutableStateOf(false) }
+    var evaluationResult by remember { mutableStateOf<String?>(null) }
 
     val currentPreviewPage = uploadedPages.find { it.id == previewingPageId }
     val previewIndex = uploadedPages.indexOfFirst { it.id == previewingPageId }
 
-    // Helper to add or replace image
     val handleImageAcquired: (Uri?, Bitmap?, String, String, Color) -> Unit = { uri, bitmap, title, snippet, color ->
         when (val target = pickerTarget) {
             is PickerTarget.AddNew -> {
                 val newPage = UploadedPage(
                     uri = uri,
                     bitmap = bitmap,
-                    title = title.ifEmpty { "Page ${uploadedPages.size + 1}" },
-                    noteSnippet = snippet.ifEmpty { "Uploaded document page" },
+                    title = title.ifEmpty { "Answer Sheet ${uploadedPages.size + 1}" },
+                    noteSnippet = snippet.ifEmpty { "Handwritten answer page" },
                     badgeColor = color,
                     rotationDegrees = 0f
                 )
                 uploadedPages.add(newPage)
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Page added successfully!")
+                    snackbarHostState.showSnackbar("Answer page uploaded!")
                 }
             }
             is PickerTarget.ReplaceExisting -> {
@@ -132,18 +131,17 @@ fun ImageGenerationScreen(
                         title = title.ifEmpty { existing.title },
                         noteSnippet = snippet.ifEmpty { existing.noteSnippet },
                         badgeColor = color,
-                        rotationDegrees = 0f // reset rotation on replacement
+                        rotationDegrees = 0f
                     )
                     uploadedPages[index] = updated
                     coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Page replaced successfully!")
+                        snackbarHostState.showSnackbar("Answer page replaced!")
                     }
                 }
             }
         }
     }
 
-    // System Camera Launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { capturedBitmap ->
@@ -151,14 +149,13 @@ fun ImageGenerationScreen(
             handleImageAcquired(
                 null,
                 capturedBitmap,
-                "Camera Photo ${uploadedPages.size + 1}",
-                "Captured from device camera",
+                "Camera Sheet ${uploadedPages.size + 1}",
+                "Captured answer sheet from camera",
                 Color(0xFFFEF3C7)
             )
         }
     }
 
-    // System Gallery / Photo Picker Launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { selectedUri ->
@@ -166,14 +163,13 @@ fun ImageGenerationScreen(
             handleImageAcquired(
                 selectedUri,
                 null,
-                "Gallery Photo ${uploadedPages.size + 1}",
-                "Selected from device gallery",
+                "Gallery Sheet ${uploadedPages.size + 1}",
+                "Selected from gallery",
                 Color(0xFFE0E7FF)
             )
         }
     }
 
-    // System File Picker Launcher for documents/images
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { selectedUri ->
@@ -181,8 +177,8 @@ fun ImageGenerationScreen(
             handleImageAcquired(
                 selectedUri,
                 null,
-                "File ${uploadedPages.size + 1}",
-                "Imported from files",
+                "File Sheet ${uploadedPages.size + 1}",
+                "Imported file sheet",
                 Color(0xFFDCFCE7)
             )
         }
@@ -213,7 +209,7 @@ fun ImageGenerationScreen(
                 ) {
                     IconButton(
                         onClick = onBack,
-                        modifier = Modifier.testTag("image_gen_back_button")
+                        modifier = Modifier.testTag("written_practice_back_button")
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -228,13 +224,13 @@ fun ImageGenerationScreen(
                             .padding(start = 4.dp)
                     ) {
                         Text(
-                            text = "Generate from Image",
+                            text = "Written Answer Practice",
                             color = TextOnWhitePrimary,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "OCR textbook pages, notes & worksheets",
+                            text = "Upload handwritten pages for step-by-step grading",
                             color = SlateGray,
                             fontSize = 12.sp
                         )
@@ -257,16 +253,76 @@ fun ImageGenerationScreen(
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    // 1. Large Dashed-Border Drop-Zone (fully clickable)
+                    // Question Prompt Card
+                    FloatingCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        cornerRadius = 20.dp,
+                        elevation = 2.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(18.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Assignment,
+                                        contentDescription = null,
+                                        tint = VioletAccent,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Question 1 (5 Marks)",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = VioletAccent
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFFEEF2FF))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        text = "Class 11 Physics",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = VioletAccent
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = "State and prove Newton's Second Law of Motion (F = ma). Derive the impulse-momentum relationship and include a neat free body diagram for verification.",
+                                color = TextOnWhitePrimary,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Upload area banner (fully clickable)
                     MainUploadDropZone(
                         onClick = {
                             pickerTarget = PickerTarget.AddNew
                             isPickerOpen = true
                         },
-                        modifier = Modifier.testTag("dashed_image_dropzone")
+                        title = "Upload handwritten answer sheet",
+                        subtitle = "Capture photo of notebook or select scanned pages (JPG, PNG, WEBP)",
+                        testTag = "written_upload_dropzone"
                     )
 
-                    // 2. Row of uploaded thumbnails + "+ Add page" card
+                    // Uploaded Pages Section with thumbnails, tap to preview, quick 'X' delete, and "+ Add page"
                     UploadedPagesSection(
                         pages = uploadedPages,
                         onAddPageClick = {
@@ -279,39 +335,48 @@ fun ImageGenerationScreen(
                         onDeletePage = { pageId ->
                             uploadedPages.removeAll { it.id == pageId }
                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Page removed.")
+                                snackbarHostState.showSnackbar("Answer page removed.")
                             }
                         },
-                        sectionTitle = "Uploaded Pages"
+                        sectionTitle = "Uploaded Answer Sheets"
                     )
 
-                    // 3. Difficulty and Number of MCQs Dropdowns Card
-                    FloatingCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        cornerRadius = 24.dp,
-                        elevation = 2.dp
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                    // Evaluation Summary Card if evaluated
+                    if (evaluationResult != null) {
+                        FloatingCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            cornerRadius = 20.dp,
+                            elevation = 3.dp
                         ) {
-                            CustomDropdownField(
-                                label = "Difficulty",
-                                selectedValue = selectedDifficulty,
-                                options = difficultyOptions,
-                                onSelectOption = { selectedDifficulty = it },
-                                modifier = Modifier.testTag("dropdown_image_difficulty")
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(18.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = SuccessGreen,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "AI Evaluation Score: 4.5 / 5.0",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = TextOnWhitePrimary
+                                    )
+                                }
 
-                            CustomDropdownField(
-                                label = "Number of MCQs",
-                                selectedValue = selectedMcqCount,
-                                options = countOptions,
-                                onSelectOption = { selectedMcqCount = it },
-                                modifier = Modifier.testTag("dropdown_image_mcq_count")
-                            )
+                                Text(
+                                    text = evaluationResult ?: "",
+                                    fontSize = 13.sp,
+                                    lineHeight = 18.sp,
+                                    color = Color(0xFF334155)
+                                )
+                            }
                         }
                     }
 
@@ -319,7 +384,7 @@ fun ImageGenerationScreen(
                 }
             }
 
-            // Sticky Bottom Section with OCR Helper line
+            // Bottom Submit Button
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = CardWhite,
@@ -333,31 +398,54 @@ fun ImageGenerationScreen(
                         .padding(horizontal = 20.dp, vertical = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    GradientButton(
-                        text = "Generate MCQs",
-                        onClick = {
-                            if (uploadedPages.isEmpty()) {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Please upload at least one image.")
+                    if (isEvaluating) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(12.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                strokeWidth = 3.dp,
+                                modifier = Modifier.size(24.dp),
+                                color = VioletAccent
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Evaluating handwritten steps with OCR...",
+                                color = TextOnWhitePrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    } else {
+                        GradientButton(
+                            text = "Submit for AI Evaluation",
+                            onClick = {
+                                if (uploadedPages.isEmpty()) {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Please upload at least one answer page.")
+                                    }
+                                    return@GradientButton
                                 }
-                                return@GradientButton
-                            }
-                            val descriptions = uploadedPages.map { page ->
-                                "${page.title} (Rotated ${page.rotationDegrees.toInt()}°): ${page.noteSnippet.replace("\n", " ")}"
-                            }
-                            val count = selectedMcqCount.toIntOrNull() ?: 20
-                            onGenerate(descriptions, selectedDifficulty, count)
-                        },
-                        modifier = Modifier
-                            .widthIn(max = 500.dp)
-                            .fillMaxWidth()
-                            .testTag("image_generate_mcqs_button")
-                    )
+                                isEvaluating = true
+                                coroutineScope.launch {
+                                    delay(1200)
+                                    isEvaluating = false
+                                    evaluationResult = "✅ Step 1 (Definition): Correctly stated law of momentum.\n✅ Step 2 (Mathematical Derivation): F = dp/dt = ma derived accurately.\n✅ Step 3 (Impulse Formula): Accurate relationship J = Δp with SI unit.\n💡 Suggestion: Label normal force and gravity vector arrows more clearly in the free body diagram for full marks."
+                                    snackbarHostState.showSnackbar("Evaluation complete!")
+                                }
+                            },
+                            modifier = Modifier
+                                .widthIn(max = 500.dp)
+                                .fillMaxWidth()
+                                .testTag("written_submit_button")
+                        )
+                    }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "AI will read the image using OCR and generate relevant questions.",
+                        text = "AI inspects handwritten diagrams, derivations, and step accuracy.",
                         color = SlateGray,
                         fontSize = 11.sp,
                         textAlign = TextAlign.Center
@@ -366,10 +454,10 @@ fun ImageGenerationScreen(
             }
         }
 
-        // Image Source Picker Modal (Camera, Gallery, Files, Sample)
+        // Image Source Picker Modal
         ImageSourcePickerDialog(
             isOpen = isPickerOpen,
-            title = if (pickerTarget is PickerTarget.AddNew) "Add Page" else "Replace Page",
+            title = if (pickerTarget is PickerTarget.AddNew) "Add Answer Sheet" else "Replace Answer Sheet",
             onDismiss = { isPickerOpen = false },
             onLaunchCamera = { cameraLauncher.launch(null) },
             onLaunchGallery = { galleryLauncher.launch("image/*") },
@@ -379,7 +467,7 @@ fun ImageGenerationScreen(
             }
         )
 
-        // Full-screen / Modal Image Preview with Zoom, Rotate 90°, Replace, and Remove
+        // Modal Image Preview with Pinch-Zoom, Rotate 90°, Replace, and Remove
         ImagePreviewModal(
             page = currentPreviewPage,
             isOpen = previewingPageId != null,
@@ -403,7 +491,7 @@ fun ImageGenerationScreen(
                 uploadedPages.removeAll { it.id == pageId }
                 previewingPageId = null
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Page removed.")
+                    snackbarHostState.showSnackbar("Answer sheet removed.")
                 }
             }
         )

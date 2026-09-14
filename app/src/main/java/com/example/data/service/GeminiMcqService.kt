@@ -97,6 +97,7 @@ class GeminiMcqService(
         subject: String,
         topic: String,
         scope: String,
+        specificTopic: String? = null,
         difficulty: String,
         totalCount: Int,
         onProgress: (generatedSoFar: Int, total: Int) -> Unit = { _, _ -> },
@@ -105,14 +106,20 @@ class GeminiMcqService(
         val promptBuilder = StringBuilder()
         promptBuilder.append("Target Audience: $className students.\n")
         promptBuilder.append("Subject: $subject\n")
-        promptBuilder.append("Chapter/Topic: $topic\n")
+        promptBuilder.append("Chapter: $topic\n")
         promptBuilder.append("Scope: $scope\n")
+        val effectiveTopicHint = if (!specificTopic.isNullOrBlank()) {
+            promptBuilder.append("Specific Sub-Topic within Chapter: ${specificTopic.trim()}\n")
+            "$topic (${specificTopic.trim()})"
+        } else {
+            topic
+        }
         promptBuilder.append("Difficulty Level: $difficulty\n")
 
         generateMultiAiParallel(
             baseContext = promptBuilder.toString(),
             subjectHint = subject,
-            topicHint = topic,
+            topicHint = effectiveTopicHint,
             difficultyHint = difficulty,
             totalCount = totalCount,
             onProgress = onProgress,

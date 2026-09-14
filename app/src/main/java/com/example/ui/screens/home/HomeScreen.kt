@@ -401,6 +401,20 @@ fun HomeScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Row 3: Written Answer Practice
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            SwitcherChip(
+                                label = "9. Written Practice (Image Upload)",
+                                onClick = { onNavigateScreen(AppScreen.WRITTEN_ANSWER_PRACTICE) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
