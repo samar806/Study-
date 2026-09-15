@@ -57,10 +57,13 @@ import com.example.ui.theme.SlateGray
 import com.example.ui.theme.TextOnWhitePrimary
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.Menu
+
 @Composable
 fun ImageGenerationScreen(
     onBack: () -> Unit,
     onGenerate: (pageDescriptions: List<String>, difficulty: String, count: Int) -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -220,6 +223,19 @@ fun ImageGenerationScreen(
                             contentDescription = "Back",
                             tint = Color(0xFF1E293B)
                         )
+                    }
+
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
                     }
 
                     Column(

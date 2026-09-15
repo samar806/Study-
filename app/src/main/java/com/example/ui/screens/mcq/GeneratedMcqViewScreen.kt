@@ -74,6 +74,8 @@ import com.example.ui.theme.TextOnWhitePrimary
 import com.example.ui.theme.VioletAccent
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.Menu
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GeneratedMcqViewScreen(
@@ -84,6 +86,7 @@ fun GeneratedMcqViewScreen(
     errorMessage: String? = null,
     onRetry: () -> Unit = {},
     onBack: () -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     onAskAi: suspend (questionText: String) -> String = { "Thinking..." },
     modifier: Modifier = Modifier
 ) {
@@ -142,6 +145,19 @@ fun GeneratedMcqViewScreen(
                         )
                     }
 
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
+                    }
+
                     Text(
                         text = "Generated MCQs",
                         color = TextOnWhitePrimary,
@@ -171,7 +187,7 @@ fun GeneratedMcqViewScreen(
                                 modifier = Modifier.background(CardWhite)
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Export to PDF", fontSize = 14.sp) },
+                                    text = { Text("Export to PDF", fontSize = 14.sp, color = Color(0xFF1E293B)) },
                                     onClick = {
                                         showOverflowMenu = false
                                         coroutineScope.launch {
@@ -180,7 +196,7 @@ fun GeneratedMcqViewScreen(
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Save to Question Bank", fontSize = 14.sp) },
+                                    text = { Text("Save to Question Bank", fontSize = 14.sp, color = Color(0xFF1E293B)) },
                                     onClick = {
                                         showOverflowMenu = false
                                         coroutineScope.launch {
@@ -388,7 +404,7 @@ fun GeneratedMcqViewScreen(
                             .weight(1f)
                             .fillMaxWidth()
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 18.dp, vertical = 16.dp),
+                            .padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 120.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Column(

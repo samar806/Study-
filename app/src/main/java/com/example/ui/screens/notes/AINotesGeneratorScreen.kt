@@ -81,6 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.SyllabusData
 import com.example.ui.components.FloatingCard
+import com.example.ui.components.CustomDropdownField
 import com.example.ui.components.GradientButton
 import com.example.ui.theme.BlueAccent
 import com.example.ui.theme.CardBorderLight
@@ -92,6 +93,7 @@ import com.example.ui.theme.SuccessGreen
 import com.example.ui.theme.TextOnWhitePrimary
 import com.example.ui.theme.TextOnWhiteSecondary
 import com.example.ui.theme.VioletAccent
+import androidx.compose.material.icons.filled.Menu
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -107,7 +109,8 @@ data class NoteTypeItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AINotesGeneratorScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -216,15 +219,30 @@ fun AINotesGeneratorScreen(
                         .padding(horizontal = 8.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.testTag("notes_back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFF1E293B)
-                        )
+                    if (onBack != null) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.testTag("notes_back_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
+                    }
+
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
                     }
 
                     Column(
@@ -244,28 +262,13 @@ fun AINotesGeneratorScreen(
                             fontSize = 12.sp
                         )
                     }
-
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 12.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFEEF2FF))
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = selectedClass,
-                            color = VioletAccent,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
 
             // Main Content: 2-Column Grid of Note Types + Controls
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 120.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
@@ -286,114 +289,65 @@ fun AINotesGeneratorScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
-                                text = "Select Subject & Chapter",
+                                text = "Select Class & Subject",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                                 color = TextOnWhitePrimary
                             )
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                // Subject Dropdown
-                                ExposedDropdownMenuBox(
-                                    expanded = isSubjectExpanded,
-                                    onExpandedChange = { isSubjectExpanded = it },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    OutlinedTextField(
-                                        value = selectedSubject,
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        label = { Text("Subject", fontSize = 12.sp) },
-                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isSubjectExpanded) },
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = VioletAccent,
-                                            unfocusedBorderColor = CardBorderLight,
-                                            focusedContainerColor = Color.White,
-                                            unfocusedContainerColor = Color.White
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                            .testTag("notes_subject_dropdown")
-                                    )
-                                     ExposedDropdownMenu(
-                                        expanded = isSubjectExpanded,
-                                        onDismissRequest = { isSubjectExpanded = false },
-                                        containerColor = Color.White
-                                    ) {
-                                        subjects.forEach { subj ->
-                                            DropdownMenuItem(
-                                                text = { Text(subj, fontSize = 13.sp, color = Color(0xFF1E293B)) },
-                                                onClick = {
-                                                    selectedSubject = subj
-                                                    isSubjectExpanded = false
-                                                    val newChapters = SyllabusData.syllabus[selectedClass]?.get(subj) ?: emptyList()
-                                                    selectedChapter = newChapters.firstOrNull() ?: ""
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
+                            CustomDropdownField(
+                                label = "Class / Exam Target",
+                                selectedValue = selectedClass,
+                                options = classes,
+                                onSelectOption = { newClass ->
+                                    selectedClass = newClass
+                                    val newSubjects = SyllabusData.syllabus[newClass]?.keys?.toList() ?: emptyList()
+                                    selectedSubject = newSubjects.firstOrNull() ?: ""
+                                    val newChapters = SyllabusData.syllabus[newClass]?.get(selectedSubject) ?: emptyList()
+                                    selectedChapter = newChapters.firstOrNull() ?: ""
+                                },
+                                modifier = Modifier.testTag("notes_class_dropdown")
+                            )
 
-                                 // Chapter Dropdown
-                                ExposedDropdownMenuBox(
-                                    expanded = isChapterExpanded,
-                                    onExpandedChange = { isChapterExpanded = it },
-                                    modifier = Modifier.weight(1.2f)
-                                ) {
-                                    OutlinedTextField(
-                                        value = selectedChapter,
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        label = { Text("Chapter", fontSize = 12.sp) },
-                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isChapterExpanded) },
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = VioletAccent,
-                                            unfocusedBorderColor = CardBorderLight,
-                                            focusedContainerColor = Color.White,
-                                            unfocusedContainerColor = Color.White
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                            .testTag("notes_chapter_dropdown")
-                                    )
-                                    ExposedDropdownMenu(
-                                        expanded = isChapterExpanded,
-                                        onDismissRequest = { isChapterExpanded = false },
-                                        containerColor = Color.White
-                                    ) {
-                                        chapters.forEach { chap ->
-                                            DropdownMenuItem(
-                                                text = { Text(chap, fontSize = 13.sp, color = Color(0xFF1E293B)) },
-                                                onClick = {
-                                                    selectedChapter = chap
-                                                    isChapterExpanded = false
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                            CustomDropdownField(
+                                label = "Subject",
+                                selectedValue = selectedSubject.ifEmpty { "Select Subject" },
+                                options = subjects,
+                                onSelectOption = { subj ->
+                                    selectedSubject = subj
+                                    val newChapters = SyllabusData.syllabus[selectedClass]?.get(subj) ?: emptyList()
+                                    selectedChapter = newChapters.firstOrNull() ?: ""
+                                },
+                                modifier = Modifier.testTag("notes_subject_dropdown")
+                            )
+
+                            CustomDropdownField(
+                                label = "Chapter / Unit",
+                                selectedValue = selectedChapter.ifEmpty { "Select Chapter" },
+                                options = chapters,
+                                onSelectOption = { chap ->
+                                    selectedChapter = chap
+                                },
+                                modifier = Modifier.testTag("notes_chapter_dropdown")
+                            )
 
                             // Specific Topic / Keywords Input
                             OutlinedTextField(
                                 value = specificTopic,
                                 onValueChange = { specificTopic = it },
                                 label = { Text("Specific Topic / Keywords (Optional)", fontSize = 12.sp) },
-                                placeholder = { Text("e.g. Electromagnetic induction laws, Kepler's 3rd law", fontSize = 12.sp, color = Color(0xFF94A3B8)) },
+                                placeholder = { Text("e.g. Electromagnetic induction laws", fontSize = 12.sp) },
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = VioletAccent,
                                     unfocusedBorderColor = CardBorderLight,
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
                                     focusedTextColor = Color(0xFF1E293B),
-                                    unfocusedTextColor = Color(0xFF1E293B)
+                                    unfocusedTextColor = Color(0xFF1E293B),
+                                    focusedLabelColor = TextOnWhiteSecondary,
+                                    unfocusedLabelColor = TextOnWhiteSecondary,
+                                    focusedPlaceholderColor = TextOnWhiteSecondary,
+                                    unfocusedPlaceholderColor = TextOnWhiteSecondary
                                 ),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier

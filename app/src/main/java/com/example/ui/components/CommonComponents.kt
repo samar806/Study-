@@ -281,7 +281,7 @@ fun CleanInputField(
         placeholder = {
             Text(
                 text = placeholder,
-                color = SlateGray.copy(alpha = 0.7f),
+                color = SlateGray,
                 fontSize = 14.sp
             )
         },

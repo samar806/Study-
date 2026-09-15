@@ -29,6 +29,7 @@ data class ChatMessage(
 @Composable
 fun DoubtSectionScreen(
     onBack: () -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -63,7 +64,8 @@ fun DoubtSectionScreen(
                 RepeatingHeader(
                     title = "Doubt Section",
                     subtitle = "Ask any question and get instant AI help",
-                    onBackClick = onBack
+                    onBackClick = onBack,
+                    onOpenDrawer = onOpenDrawer
                 )
             }
 

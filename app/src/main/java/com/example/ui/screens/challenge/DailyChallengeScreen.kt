@@ -66,35 +66,22 @@ import com.example.ui.theme.TextOnWhitePrimary
 import com.example.ui.theme.TextOnWhiteSecondary
 import com.example.ui.theme.VioletAccent
 import com.example.ui.theme.WarningOrange
+import androidx.compose.material.icons.filled.Menu
 
-data class DayStreakMarker(
-    val dayLabel: String,
-    val isCompleted: Boolean,
-    val isToday: Boolean = false
-)
+import com.example.data.repository.DailyChallengeRepository
 
 @Composable
 fun DailyChallengeScreen(
     onBack: () -> Unit,
     onStartChallenge: () -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
 
-    // 7 circular day markers (Mon–Sun), checkmarked for completed days
-    val weekDays = remember {
-        listOf(
-            DayStreakMarker("Mon", isCompleted = true),
-            DayStreakMarker("Tue", isCompleted = true),
-            DayStreakMarker("Wed", isCompleted = true),
-            DayStreakMarker("Thu", isCompleted = true),
-            DayStreakMarker("Fri", isCompleted = true),
-            DayStreakMarker("Sat", isCompleted = false, isToday = true),
-            DayStreakMarker("Sun", isCompleted = false)
-        )
-    }
-
-    var streakCount by remember { mutableIntStateOf(5) }
+    val state = DailyChallengeRepository.currentChallengeState
+    val streakCount = DailyChallengeRepository.getCurrentStreak()
+    val weekDays = DailyChallengeRepository.getLast7CalendarDays()
 
     // Pulsing flame animation for fire icon
     val infiniteTransition = rememberInfiniteTransition(label = "flame_pulse")
@@ -140,6 +127,19 @@ fun DailyChallengeScreen(
                             contentDescription = "Back",
                             tint = Color(0xFF1E293B)
                         )
+                    }
+
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
                     }
 
                     Column(
@@ -194,7 +194,7 @@ fun DailyChallengeScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. FEATURE CARD: fire icon, "Today's Challenge", bold question count, gradient "Start Now" button
+                // 1. FEATURE CARD: fire icon, "Today's Challenge", bold question count, dynamic button
                 FloatingCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -221,20 +221,26 @@ fun DailyChallengeScreen(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0x33F59E0B))
+                                        .background(
+                                            if (state?.isCompleted == true) Color(0x3310B981) else Color(0x33F59E0B)
+                                        )
                                         .padding(horizontal = 10.dp, vertical = 4.dp)
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(
                                             imageVector = Icons.Default.LocalFireDepartment,
                                             contentDescription = null,
-                                            tint = WarningOrange,
+                                            tint = if (state?.isCompleted == true) SuccessGreen else WarningOrange,
                                             modifier = Modifier.size(14.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "TODAY'S CHALLENGE",
-                                            color = Color(0xFFFDE68A),
+                                            text = when {
+                                                state?.isCompleted == true -> "COMPLETED TODAY"
+                                                state?.userAnswers?.isNotEmpty() == true -> "IN PROGRESS"
+                                                else -> "TODAY'S CHALLENGE"
+                                            },
+                                            color = if (state?.isCompleted == true) Color(0xFFA7F3D0) else Color(0xFFFDE68A),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.ExtraBold,
                                             letterSpacing = 1.sp
@@ -245,14 +251,18 @@ fun DailyChallengeScreen(
                                 Spacer(modifier = Modifier.height(10.dp))
 
                                 Text(
-                                    text = "Physics & Chemistry Sprint",
+                                    text = if (state?.isCompleted == true) "Today's Challenge Complete" else "Physics & Chemistry Sprint",
                                     color = Color.White,
                                     fontSize = 19.sp,
                                     fontWeight = FontWeight.Bold
                                 )
 
                                 Text(
-                                    text = "Laws of Motion & Chemical Kinetics",
+                                    text = when {
+                                        state?.isCompleted == true -> "Score: ${state?.score ?: 0} / ${state?.questions?.size ?: 10} • Great job!"
+                                        state?.userAnswers?.isNotEmpty() == true -> "${state?.userAnswers?.size ?: 0} / ${state?.questions?.size ?: 10} Questions Answered"
+                                        else -> "Laws of Motion & Chemical Kinetics"
+                                    },
                                     color = Color(0xFFCBD5E1),
                                     fontSize = 13.sp
                                 )
@@ -265,15 +275,16 @@ fun DailyChallengeScreen(
                                     .clip(CircleShape)
                                     .background(
                                         Brush.radialGradient(
-                                            listOf(Color(0xFFFF7A00), Color(0xFFFF3D00))
+                                            if (state?.isCompleted == true) listOf(Color(0xFF10B981), Color(0xFF047857))
+                                            else listOf(Color(0xFFFF7A00), Color(0xFFFF3D00))
                                         )
                                     )
                                     .scale(flameScale),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.LocalFireDepartment,
-                                    contentDescription = "Fire icon",
+                                    imageVector = if (state?.isCompleted == true) Icons.Default.Check else Icons.Default.LocalFireDepartment,
+                                    contentDescription = "Status icon",
                                     tint = Color.White,
                                     modifier = Modifier.size(34.dp)
                                 )
@@ -294,7 +305,7 @@ fun DailyChallengeScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "10 Questions",
+                                    text = "${state?.questions?.size ?: 10} Questions",
                                     color = Color.White,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold
@@ -351,9 +362,13 @@ fun DailyChallengeScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Gradient "Start Now" Button
+                        // Dynamic Action Button
                         GradientButton(
-                            text = "Start Now",
+                            text = when {
+                                state?.isCompleted == true -> "Review Answers"
+                                state?.userAnswers?.isNotEmpty() == true -> "Continue Challenge"
+                                else -> "Start Now"
+                            },
                             onClick = onStartChallenge,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -361,7 +376,7 @@ fun DailyChallengeScreen(
                                 .testTag("daily_challenge_start_button"),
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Default.PlayArrow,
+                                    imageVector = if (state?.isCompleted == true) Icons.Default.Check else Icons.Default.PlayArrow,
                                     contentDescription = null,
                                     tint = Color.White,
                                     modifier = Modifier.size(20.dp)

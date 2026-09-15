@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -26,11 +27,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Quiz
@@ -41,6 +45,7 @@ import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -102,6 +107,263 @@ enum class NavigationTab(
     AI_TEACHER("AI Teacher", "✨", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
     PROGRESS("Progress", "📊", Icons.Filled.Insights, Icons.Outlined.Insights),
     PROFILE("Profile", "👤", Icons.Filled.Person, Icons.Outlined.Person)
+}
+
+data class DrawerItem(
+    val id: String,
+    val emoji: String,
+    val label: String,
+    val testTag: String,
+    val screen: AppScreen,
+    val tab: NavigationTab
+)
+
+val drawerItems = listOf(
+    DrawerItem("home", "🏠", "Home", "drawer_item_home", AppScreen.MAIN_SHELL, NavigationTab.HOME),
+    DrawerItem("mcq_gen", "✨", "AI MCQ Generator", "drawer_item_mcq_gen", AppScreen.MCQ_GENERATOR_SETUP, NavigationTab.HOME),
+    DrawerItem("practice", "📚", "Practice / Quiz", "drawer_item_practice", AppScreen.QUIZ_INTERFACE, NavigationTab.PRACTICE),
+    DrawerItem("ai_teacher", "🤖", "AI Teacher", "drawer_item_ai_teacher", AppScreen.MAIN_SHELL, NavigationTab.AI_TEACHER),
+    DrawerItem("doubt", "💬", "Doubt Section", "drawer_item_doubt", AppScreen.DOUBT_SECTION, NavigationTab.HOME),
+    DrawerItem("notes", "📝", "Generate Notes", "drawer_item_notes", AppScreen.AI_NOTES_GENERATOR, NavigationTab.HOME),
+    DrawerItem("revision", "⚡", "Quick Revision", "drawer_item_revision", AppScreen.QUICK_REVISION, NavigationTab.HOME),
+    DrawerItem("challenge", "🔥", "Daily Challenge", "drawer_item_challenge", AppScreen.DAILY_CHALLENGE, NavigationTab.HOME),
+    DrawerItem("bank", "📖", "Question Bank", "drawer_item_bank", AppScreen.QUESTION_BANK, NavigationTab.PRACTICE),
+    DrawerItem("progress", "📊", "Progress", "drawer_item_progress", AppScreen.MAIN_SHELL, NavigationTab.PROGRESS),
+    DrawerItem("achievements", "🏆", "Achievements", "drawer_item_achievements", AppScreen.ACHIEVEMENTS, NavigationTab.PROGRESS),
+    DrawerItem("profile", "👤", "Profile", "drawer_item_profile", AppScreen.MAIN_SHELL, NavigationTab.PROFILE),
+    DrawerItem("settings", "⚙️", "Settings", "drawer_item_settings", AppScreen.MAIN_SHELL, NavigationTab.PROFILE)
+)
+
+fun isDrawerItemActive(item: DrawerItem, currentScreen: AppScreen, currentTab: NavigationTab): Boolean {
+    return when (item.id) {
+        "home" -> currentScreen == AppScreen.MAIN_SHELL && currentTab == NavigationTab.HOME
+        "mcq_gen" -> currentScreen == AppScreen.MCQ_GENERATOR_SETUP || currentScreen == AppScreen.PROMPT_GENERATION || currentScreen == AppScreen.IMAGE_GENERATION || currentScreen == AppScreen.GENERATED_MCQ_VIEW
+        "practice" -> currentScreen == AppScreen.QUIZ_INTERFACE || currentScreen == AppScreen.WRITTEN_ANSWER_PRACTICE
+        "ai_teacher" -> currentScreen == AppScreen.MAIN_SHELL && currentTab == NavigationTab.AI_TEACHER
+        "doubt" -> currentScreen == AppScreen.DOUBT_SECTION
+        "notes" -> currentScreen == AppScreen.AI_NOTES_GENERATOR
+        "revision" -> currentScreen == AppScreen.QUICK_REVISION
+        "challenge" -> currentScreen == AppScreen.DAILY_CHALLENGE
+        "bank" -> currentScreen == AppScreen.QUESTION_BANK || (currentScreen == AppScreen.MAIN_SHELL && currentTab == NavigationTab.PRACTICE)
+        "progress" -> currentScreen == AppScreen.MAIN_SHELL && currentTab == NavigationTab.PROGRESS
+        "achievements" -> currentScreen == AppScreen.ACHIEVEMENTS
+        "profile" -> currentScreen == AppScreen.MAIN_SHELL && currentTab == NavigationTab.PROFILE
+        "settings" -> false
+        else -> false
+    }
+}
+
+/**
+ * Slide-out Left Side Drawer content.
+ * Dark navy background matching the AI Teacher panel style.
+ */
+@Composable
+fun AppDrawerContent(
+    currentScreen: AppScreen,
+    currentTab: NavigationTab,
+    userName: String,
+    userGrade: String,
+    userExam: String,
+    onNavigate: (AppScreen, NavigationTab) -> Unit,
+    onHelpSupport: () -> Unit,
+    onLogout: () -> Unit,
+    onCloseDrawer: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = Color(0xFF0F172A)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(20.dp)
+        ) {
+            // Top Section: App Logo + Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(PrimaryGradient),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.School,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "AI MCQ Teacher",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = "Smart Exam Assistant",
+                        color = TextOnNavySecondary,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            // Student Card with Avatar and View Profile link
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable {
+                        onNavigate(AppScreen.MAIN_SHELL, NavigationTab.PROFILE)
+                    },
+                color = Color(0xFF1E293B),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryGradient),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = userName.take(1).uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 16.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = userName,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "$userGrade · $userExam",
+                            color = TextOnNavySecondary,
+                            fontSize = 11.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "View Profile →",
+                            color = VioletAccent,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Scrollable List of Features
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                drawerItems.forEach { item ->
+                    val isActive = isDrawerItemActive(item, currentScreen, currentTab)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .then(
+                                if (isActive) Modifier.background(PrimaryGradient)
+                                else Modifier.clickable {
+                                    onNavigate(item.screen, item.tab)
+                                }
+                            )
+                            .padding(horizontal = 14.dp, vertical = 11.dp)
+                            .testTag(item.testTag),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = item.emoji, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Text(
+                            text = item.label,
+                            color = if (isActive) Color.White else Color(0xFF94A3B8),
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 14.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFF1E293B), thickness = 1.dp)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Bottom Actions: Help & Support, Log Out in red
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onHelpSupport() }
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .testTag("drawer_item_help"),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.HelpOutline,
+                    contentDescription = "Help & Support",
+                    tint = Color(0xFF94A3B8),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Text(
+                    text = "Help & Support",
+                    color = Color(0xFF94A3B8),
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onLogout() }
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .testTag("drawer_item_logout"),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = "Log Out",
+                    tint = Color(0xFFEF4444),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Text(
+                    text = "Log Out",
+                    color = Color(0xFFEF4444),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -376,13 +638,14 @@ private fun SidebarSubItem(
 
 /**
  * Repeating Header Component:
- * Back arrow top-left (optional), bold title + optional gray subtitle, optional icon top-right.
+ * Back arrow top-left (optional), hamburger menu icon (optional), bold title + optional gray subtitle, optional icon top-right.
  */
 @Composable
 fun RepeatingHeader(
     title: String,
     subtitle: String? = null,
     onBackClick: (() -> Unit)? = null,
+    onOpenDrawer: (() -> Unit)? = null,
     rightAction: @Composable (() -> Unit)? = null,
     isDarkNavy: Boolean = false,
     modifier: Modifier = Modifier
@@ -410,6 +673,25 @@ fun RepeatingHeader(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
+                        tint = if (isDarkNavy) Color.White else Color(0xFF1E293B),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            if (onOpenDrawer != null) {
+                IconButton(
+                    onClick = onOpenDrawer,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(if (isDarkNavy) Color(0x33FFFFFF) else Color(0xFFF1F5F9))
+                        .testTag("hamburger_menu_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Menu",
                         tint = if (isDarkNavy) Color.White else Color(0xFF1E293B),
                         modifier = Modifier.size(20.dp)
                     )

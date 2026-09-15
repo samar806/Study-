@@ -55,6 +55,9 @@ import com.example.ui.theme.TextOnWhitePrimary
 import com.example.ui.theme.TextOnWhiteSecondary
 import com.example.ui.theme.VioletAccent
 
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.IconButton
+
 @Composable
 fun TabPlaceholderScreen(
     tab: NavigationTab,
@@ -64,6 +67,7 @@ fun TabPlaceholderScreen(
     isDarkTheme: Boolean,
     onToggleDarkTheme: () -> Unit,
     onNavigateScreen: (AppScreen) -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -75,7 +79,7 @@ fun TabPlaceholderScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 90.dp)
+                .padding(bottom = 24.dp)
         ) {
             // Navy Header Section
             Box(
@@ -87,11 +91,29 @@ fun TabPlaceholderScreen(
                         )
                     )
                     .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 24.dp)
+                    .padding(horizontal = 20.dp, vertical = 20.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x26FFFFFF))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                    }
+
                     Box(
                         modifier = Modifier
                             .size(44.dp)

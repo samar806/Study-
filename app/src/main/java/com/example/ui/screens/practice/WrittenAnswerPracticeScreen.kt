@@ -71,9 +71,12 @@ import com.example.ui.theme.VioletAccent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.Menu
+
 @Composable
 fun WrittenAnswerPracticeScreen(
     onBack: () -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -217,6 +220,19 @@ fun WrittenAnswerPracticeScreen(
                             contentDescription = "Back",
                             tint = Color(0xFF1E293B)
                         )
+                    }
+
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
                     }
 
                     Column(

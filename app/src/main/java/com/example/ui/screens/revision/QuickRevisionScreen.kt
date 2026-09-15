@@ -76,6 +76,7 @@ import com.example.ui.theme.TextOnWhitePrimary
 import com.example.ui.theme.TextOnWhiteSecondary
 import com.example.ui.theme.VioletAccent
 import com.example.ui.theme.WarningOrange
+import androidx.compose.material.icons.filled.Menu
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -91,6 +92,7 @@ data class ChecklistItem(
 @Composable
 fun QuickRevisionScreen(
     onBack: () -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     onStartQuickQuiz: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -155,6 +157,19 @@ fun QuickRevisionScreen(
                             contentDescription = "Back",
                             tint = Color(0xFF1E293B)
                         )
+                    }
+
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
                     }
 
                     Column(

@@ -53,10 +53,13 @@ import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextOnWhitePrimary
 import com.example.ui.theme.VioletAccent
 
+import androidx.compose.material.icons.filled.Menu
+
 @Composable
 fun PromptGenerationScreen(
     onBack: () -> Unit,
     onGenerate: (prompt: String, questionType: String, language: String, includeExplanations: Boolean, includeNumericals: Boolean, examPattern: String?, count: Int) -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var promptText by remember {
@@ -108,6 +111,19 @@ fun PromptGenerationScreen(
                             contentDescription = "Back",
                             tint = Color(0xFF1E293B)
                         )
+                    }
+
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
                     }
 
                     Column(

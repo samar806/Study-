@@ -1,5 +1,7 @@
 package com.example.ui.screens.gamification
 
+import com.example.data.repository.DailyChallengeRepository
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -28,6 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -92,15 +95,18 @@ data class AchievementBadge(
 @Composable
 fun AchievementsScreen(
     userName: String = "Aarav",
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // Tabs: Badges (0) vs Stats (1)
     var selectedTab by remember { mutableIntStateOf(0) }
 
+    val streakCount = DailyChallengeRepository.getCurrentStreak()
+
     // Badges required:
     // solved-count, streak, accuracy, chapters-completed, level, and an "explorer"-type milestone
-    val badgeList = remember {
+    val badgeList = remember(streakCount) {
         listOf(
             AchievementBadge(
                 id = "solved_count",
@@ -118,12 +124,12 @@ fun AchievementsScreen(
                 id = "streak",
                 title = "On Fire!",
                 category = "Daily Streak",
-                description = "Maintained a 7-day study streak",
+                description = "Maintained a study streak",
                 emoji = "🔥",
                 iconVector = Icons.Default.LocalFireDepartment,
                 bgGradient = listOf(Color(0xFFEF4444), Color(0xFFF97316)),
-                isUnlocked = true,
-                progressCurrent = 7,
+                isUnlocked = streakCount > 0,
+                progressCurrent = streakCount,
                 progressMax = 7
             ),
             AchievementBadge(
@@ -224,15 +230,30 @@ fun AchievementsScreen(
                         .padding(horizontal = 8.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.testTag("achievements_back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFF1E293B)
-                        )
+                    if (onBack != null) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.testTag("achievements_back_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
+                    }
+
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
                     }
 
                     Column(

@@ -67,10 +67,13 @@ import com.example.ui.theme.TextOnWhitePrimary
 import com.example.ui.theme.TextOnWhiteSecondary
 import com.example.ui.theme.VioletAccent
 
+import androidx.compose.material.icons.filled.Menu
+
 @Composable
 fun McqGeneratorSetupScreen(
     onBack: () -> Unit,
     onGenerate: (className: String, subject: String, chapter: String, scope: String, specificTopic: String?, difficulty: String, count: Int) -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val classOptions = remember { SyllabusData.getClasses() }
@@ -172,6 +175,19 @@ fun McqGeneratorSetupScreen(
                         )
                     }
 
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
+                    }
+
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -208,7 +224,7 @@ fun McqGeneratorSetupScreen(
                             modifier = Modifier.background(CardWhite)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Reset to Defaults", fontSize = 14.sp) },
+                                text = { Text("Reset to Defaults", fontSize = 14.sp, color = Color(0xFF1E293B)) },
                                 onClick = {
                                     selectedClass = "Class 11"
                                     selectedSubject = "Physics"
@@ -222,7 +238,7 @@ fun McqGeneratorSetupScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Curriculum & Syllabus Info", fontSize = 14.sp) },
+                                text = { Text("Curriculum & Syllabus Info", fontSize = 14.sp, color = Color(0xFF1E293B)) },
                                 onClick = {
                                     showOverflowMenu = false
                                     showSyllabusInfoDialog = true
@@ -239,7 +255,7 @@ fun McqGeneratorSetupScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 18.dp),
+                    .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 120.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 FloatingCard(

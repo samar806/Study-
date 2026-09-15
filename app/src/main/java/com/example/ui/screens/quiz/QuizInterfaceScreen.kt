@@ -64,10 +64,17 @@ import com.example.ui.theme.TextOnNavySecondary
 import com.example.ui.theme.TextOnWhitePrimary
 import com.example.ui.theme.VioletAccent
 import com.example.ui.theme.WarningOrange
+import androidx.compose.material.icons.filled.Menu
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import com.example.data.model.GeneratedMcq
+import com.example.data.repository.DailyChallengeRepository
 
 data class QuizQuestion(
     val id: Int,
@@ -75,13 +82,20 @@ data class QuizQuestion(
     val difficulty: String,
     val topic: String,
     val question: String,
-    val options: List<String>
+    val options: List<String>,
+    val correctAnswerIndex: Int = 0,
+    val explanation: String = ""
 )
 
 @Composable
 fun QuizInterfaceScreen(
     questions: List<GeneratedMcq>? = null,
+    initialAnswers: Map<Int, Int> = emptyMap(),
+    initialIndex: Int = 0,
+    isDailyChallenge: Boolean = false,
+    isReviewMode: Boolean = false,
     onBack: () -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     onQuizComplete: () -> Unit = onBack,
     modifier: Modifier = Modifier
 ) {
@@ -96,7 +110,9 @@ fun QuizInterfaceScreen(
                     question = q.question,
                     options = q.options.mapIndexed { optIdx, opt ->
                         if (opt.matches(Regex("^[A-D]\\..*"))) opt else "${('A' + optIdx)}. $opt"
-                    }
+                    },
+                    correctAnswerIndex = q.correctAnswerIndex,
+                    explanation = q.explanation
                 )
             }
         } else {
@@ -107,7 +123,9 @@ fun QuizInterfaceScreen(
                     difficulty = "Medium",
                     topic = "Organic Chemistry",
                     question = "Which of the following functional groups is present in carboxylic acids?",
-                    options = listOf("A. -OH", "B. -COOH", "C. -NH₂", "D. -CHO")
+                    options = listOf("A. -OH", "B. -COOH", "C. -NH₂", "D. -CHO"),
+                    correctAnswerIndex = 1,
+                    explanation = "Carboxylic acids contain the -COOH group (carbonyl + hydroxyl)."
                 ),
                 QuizQuestion(
                     id = 2,
@@ -115,7 +133,9 @@ fun QuizInterfaceScreen(
                     difficulty = "Medium",
                     topic = "Thermodynamics",
                     question = "For an isolated system, the change in internal energy (ΔU) in any process is always:",
-                    options = listOf("A. Positive", "B. Negative", "C. Zero", "D. Dependent on path")
+                    options = listOf("A. Positive", "B. Negative", "C. Zero", "D. Dependent on path"),
+                    correctAnswerIndex = 2,
+                    explanation = "An isolated system cannot exchange energy or matter with surroundings, so ΔU = 0."
                 ),
                 QuizQuestion(
                     id = 3,
@@ -123,18 +143,24 @@ fun QuizInterfaceScreen(
                     difficulty = "Hard",
                     topic = "Chemical Bonding",
                     question = "Which of the following molecules possesses a zero dipole moment due to symmetric geometry?",
-                    options = listOf("A. NH₃", "B. H₂O", "C. BF₃", "D. SO₂")
+                    options = listOf("A. NH₃", "B. H₂O", "C. BF₃", "D. SO₂"),
+                    correctAnswerIndex = 2,
+                    explanation = "BF3 has trigonal planar geometry where bond dipoles cancel out completely."
                 )
             )
         }
     }
 
-    var currentIndex by remember { mutableIntStateOf(0) }
+    var currentIndex by remember(initialIndex) { mutableIntStateOf(initialIndex.coerceIn(0, (quizQuestions.size - 1).coerceAtLeast(0))) }
     val currentQuestion = quizQuestions[currentIndex]
 
     // Answers and reviews map
-    val selectedAnswers = remember { mutableStateOf(mutableMapOf<Int, Int>(0 to 1)) } // default option B selected for preview
+    val selectedAnswers = remember(initialAnswers) { mutableStateOf(initialAnswers.toMutableMap()) }
     val markedForReview = remember { mutableStateOf(mutableSetOf<Int>()) }
+
+    var showCompletionDialog by remember { mutableStateOf(false) }
+    var completedScore by remember { mutableIntStateOf(0) }
+    var completedStreak by remember { mutableIntStateOf(0) }
 
     // Live countdown timer: starting at 29 minutes 45 seconds (1785 seconds)
     var remainingSeconds by remember { mutableIntStateOf(29 * 60 + 45) }
@@ -186,6 +212,19 @@ fun QuizInterfaceScreen(
                             contentDescription = "Exit Quiz",
                             tint = Color.White
                         )
+                    }
+
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color.White
+                            )
+                        }
                     }
 
                     Text(
@@ -336,18 +375,39 @@ fun QuizInterfaceScreen(
                         val selectedOpt = selectedAnswers.value[currentIndex]
                         currentQuestion.options.forEachIndexed { optIndex, optionText ->
                             val isSelected = selectedOpt == optIndex
+                            val isCorrectOpt = isReviewMode && optIndex == currentQuestion.correctAnswerIndex
+                            val isWrongSelected = isReviewMode && isSelected && optIndex != currentQuestion.correctAnswerIndex
+
+                            val optBgColor = when {
+                                isCorrectOpt -> Color(0xFF14532D)
+                                isWrongSelected -> Color(0xFF7F1D1D)
+                                isSelected -> Color(0xFF2E1065).copy(alpha = 0.85f)
+                                else -> Color(0xFF1E293B)
+                            }
+
+                            val optBorderColor = when {
+                                isCorrectOpt -> Color(0xFF22C55E)
+                                isWrongSelected -> Color(0xFFEF4444)
+                                isSelected -> VioletAccent
+                                else -> Color(0xFF334155)
+                            }
 
                             Surface(
                                 onClick = {
-                                    val newMap = selectedAnswers.value.toMutableMap()
-                                    newMap[currentIndex] = optIndex
-                                    selectedAnswers.value = newMap
+                                    if (!isReviewMode) {
+                                        val newMap = selectedAnswers.value.toMutableMap()
+                                        newMap[currentIndex] = optIndex
+                                        selectedAnswers.value = newMap
+                                        if (isDailyChallenge) {
+                                            DailyChallengeRepository.saveAnswer(currentIndex, optIndex)
+                                        }
+                                    }
                                 },
                                 shape = RoundedCornerShape(18.dp),
-                                color = if (isSelected) Color(0xFF2E1065).copy(alpha = 0.85f) else Color(0xFF1E293B),
+                                color = optBgColor,
                                 border = androidx.compose.foundation.BorderStroke(
-                                    if (isSelected) 2.dp else 1.dp,
-                                    if (isSelected) VioletAccent else Color(0xFF334155)
+                                    if (isSelected || isCorrectOpt || isWrongSelected) 2.dp else 1.dp,
+                                    optBorderColor
                                 ),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -357,28 +417,73 @@ fun QuizInterfaceScreen(
                                         .padding(horizontal = 18.dp, vertical = 16.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Radio circle
-                                    Box(
-                                        modifier = Modifier
-                                            .size(22.dp)
-                                            .clip(CircleShape)
-                                            .border(
-                                                width = if (isSelected) 6.dp else 1.5.dp,
-                                                color = if (isSelected) VioletAccent else Color(0xFF64748B),
-                                                shape = CircleShape
-                                            )
-                                            .background(if (isSelected) Color.White else Color.Transparent)
-                                    )
+                                    // Radio circle or check/cross icon
+                                    if (isCorrectOpt) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Correct",
+                                            tint = Color(0xFF22C55E),
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(22.dp)
+                                                .clip(CircleShape)
+                                                .border(
+                                                    width = if (isSelected) 6.dp else 1.5.dp,
+                                                    color = if (isSelected) VioletAccent else Color(0xFF64748B),
+                                                    shape = CircleShape
+                                                )
+                                                .background(if (isSelected) Color.White else Color.Transparent)
+                                        )
+                                    }
 
                                     Spacer(modifier = Modifier.width(16.dp))
 
                                     Text(
                                         text = optionText,
-                                        color = if (isSelected) Color.White else Color(0xFFE2E8F0),
+                                        color = if (isSelected || isCorrectOpt) Color.White else Color(0xFFE2E8F0),
                                         fontSize = 15.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        fontWeight = if (isSelected || isCorrectOpt) FontWeight.Bold else FontWeight.Medium
                                     )
                                 }
+                            }
+                        }
+                    }
+
+                    // Explanation Box in Review mode
+                    if (isReviewMode && currentQuestion.explanation.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color(0xFF1E293B),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = Color(0xFF38BDF8),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Explanation",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = currentQuestion.explanation,
+                                    color = Color(0xFFCBD5E1),
+                                    fontSize = 13.sp,
+                                    lineHeight = 18.sp
+                                )
                             }
                         }
                     }
@@ -450,13 +555,19 @@ fun QuizInterfaceScreen(
                         }
                     }
 
-                    // Filled "Next" Button
+                    // Filled "Next" / "Submit Quiz" Button
                     Surface(
                         onClick = {
                             if (currentIndex < quizQuestions.size - 1) {
                                 currentIndex++
                             } else {
-                                onQuizComplete()
+                                if (isDailyChallenge && !isReviewMode) {
+                                    completedScore = DailyChallengeRepository.completeChallenge()
+                                    completedStreak = DailyChallengeRepository.getCurrentStreak()
+                                    showCompletionDialog = true
+                                } else {
+                                    onQuizComplete()
+                                }
                             }
                         },
                         shape = RoundedCornerShape(100.dp),
@@ -472,7 +583,7 @@ fun QuizInterfaceScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (currentIndex < quizQuestions.size - 1) "Next" else "Submit Quiz",
+                                text = if (currentIndex < quizQuestions.size - 1) "Next" else if (isReviewMode) "Finish Review" else "Submit Quiz",
                                 color = Color.White,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
@@ -481,6 +592,61 @@ fun QuizInterfaceScreen(
                     }
                 }
             }
+        }
+
+        if (showCompletionDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showCompletionDialog = false
+                    onQuizComplete()
+                },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = WarningOrange,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Daily Challenge Completed!",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Great job finishing today's challenge!",
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "Score Earned: $completedScore / ${quizQuestions.size}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color(0xFF10B981)
+                        )
+                        Text(
+                            text = "Current Streak: $completedStreak Days 🔥",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color(0xFFF59E0B)
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showCompletionDialog = false
+                            onQuizComplete()
+                        }
+                    ) {
+                        Text("Continue to Home", fontWeight = FontWeight.Bold, color = VioletAccent)
+                    }
+                }
+            )
         }
 
         SnackbarHost(

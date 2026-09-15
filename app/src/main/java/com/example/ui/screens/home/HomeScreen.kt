@@ -1,5 +1,7 @@
 package com.example.ui.screens.home
 
+import com.example.data.repository.DailyChallengeRepository
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -85,10 +87,13 @@ import com.example.ui.theme.TextOnWhiteSecondary
 import com.example.ui.theme.VioletAccent
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.Menu
+
 @Composable
 fun HomeScreen(
     userName: String = "Aarav",
     onNavigateScreen: (AppScreen) -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -104,7 +109,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(bottom = 90.dp) // space for bottom nav
+                .padding(bottom = 24.dp)
         ) {
             // Navy Header Section with Greeting & Profile
             Box(
@@ -132,22 +137,44 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Greeting
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Hamburger Menu + Greeting
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (onOpenDrawer != null) {
+                            IconButton(
+                                onClick = onOpenDrawer,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0x26FFFFFF))
+                                    .testTag("hamburger_menu_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "Open Drawer",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                        }
+
+                        Column {
                             Text(
                                 text = "Good Morning, $userName! 👋",
                                 color = TextOnNavyPrimary,
-                                fontSize = 20.sp,
+                                fontSize = 19.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Ready to learn something new?",
+                                color = TextOnNavySecondary,
+                                fontSize = 12.sp
+                            )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Ready to learn something new?",
-                            color = TextOnNavySecondary,
-                            fontSize = 13.sp
-                        )
                     }
 
                     // Bell icon with dot + User Avatar
@@ -308,8 +335,6 @@ fun HomeScreen(
 
                 // 4. Daily Challenge Banner
                 DailyChallengeBanner(
-                    questionsCount = 10,
-                    streakDays = 5,
                     onStartClick = {
                         onNavigateScreen(AppScreen.DAILY_CHALLENGE)
                     }
@@ -741,11 +766,34 @@ fun ContinueLearningCard(
  */
 @Composable
 fun DailyChallengeBanner(
-    questionsCount: Int,
-    streakDays: Int,
     onStartClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val state = DailyChallengeRepository.currentChallengeState
+    val streakDays = DailyChallengeRepository.getCurrentStreak()
+
+    val totalQuestions = state?.questions?.size ?: 10
+    val score = state?.score ?: 0
+    val answeredCount = state?.userAnswers?.size ?: 0
+
+    val titleText = when {
+        state?.isCompleted == true -> "Completed · $score/$totalQuestions today"
+        state?.userAnswers?.isNotEmpty() == true -> "Today's Challenge ($answeredCount/$totalQuestions)"
+        else -> "Today's Challenge · $totalQuestions Questions"
+    }
+
+    val subtitleText = when {
+        state?.isCompleted == true -> "Completed · $score/$totalQuestions today • $streakDays days streak"
+        state?.userAnswers?.isNotEmpty() == true -> "$answeredCount / $totalQuestions answered • $streakDays days streak"
+        else -> "$totalQuestions questions • $streakDays days streak"
+    }
+
+    val buttonText = when {
+        state?.isCompleted == true -> "Review"
+        state?.userAnswers?.isNotEmpty() == true -> "Continue"
+        else -> "Start"
+    }
+
     FloatingCard(
         modifier = modifier
             .fillMaxWidth()
@@ -772,14 +820,14 @@ fun DailyChallengeBanner(
 
                 Column {
                     Text(
-                        text = "Daily Challenge",
+                        text = titleText,
                         color = Color(0xFF9A3412),
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "$questionsCount questions • $streakDays days streak",
+                        text = subtitleText,
                         color = Color(0xFFC2410C),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
@@ -787,7 +835,7 @@ fun DailyChallengeBanner(
                 }
             }
 
-            // Start Button
+            // Start / Continue / Review Button
             Surface(
                 onClick = onStartClick,
                 shape = RoundedCornerShape(100.dp),
@@ -796,11 +844,11 @@ fun DailyChallengeBanner(
                 modifier = Modifier.testTag("start_daily_challenge_button")
             ) {
                 Text(
-                    text = "Start",
+                    text = buttonText,
                     color = Color.White,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 9.dp)
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp)
                 )
             }
         }

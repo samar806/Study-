@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Clear
@@ -98,7 +99,8 @@ data class SavedItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuestionBankScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
+    onOpenDrawer: (() -> Unit)? = null,
     onViewItem: (SavedItem) -> Unit = {},
     currentTab: NavigationTab = NavigationTab.PRACTICE,
     onTabSelected: (NavigationTab) -> Unit = {},
@@ -255,15 +257,30 @@ fun QuestionBankScreen(
                         .padding(horizontal = 8.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.testTag("bank_back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFF1E293B)
-                        )
+                    if (onBack != null) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.testTag("bank_back_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
+                    }
+
+                    if (onOpenDrawer != null) {
+                        IconButton(
+                            onClick = onOpenDrawer,
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFF1E293B)
+                            )
+                        }
                     }
 
                     Column(
@@ -299,10 +316,11 @@ fun QuestionBankScreen(
 
                         DropdownMenu(
                             expanded = isOverflowMenuOpen,
-                            onDismissRequest = { isOverflowMenuOpen = false }
+                            onDismissRequest = { isOverflowMenuOpen = false },
+                            modifier = Modifier.background(Color.White)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Sort by Date (Newest)") },
+                                text = { Text("Sort by Date (Newest)", color = Color(0xFF1E293B)) },
                                 onClick = {
                                     isOverflowMenuOpen = false
                                     coroutineScope.launch {
@@ -311,7 +329,7 @@ fun QuestionBankScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Sort by Questions Count") },
+                                text = { Text("Sort by Questions Count", color = Color(0xFF1E293B)) },
                                 onClick = {
                                     isOverflowMenuOpen = false
                                     coroutineScope.launch {
@@ -320,7 +338,7 @@ fun QuestionBankScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Export Question Bank (PDF)") },
+                                text = { Text("Export Question Bank (PDF)", color = Color(0xFF1E293B)) },
                                 onClick = {
                                     isOverflowMenuOpen = false
                                     coroutineScope.launch {
@@ -467,7 +485,7 @@ fun QuestionBankScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 90.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (filteredList.isEmpty()) {
