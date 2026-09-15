@@ -1,4 +1,9 @@
 package com.example.ui.components
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Mic
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -766,3 +771,115 @@ fun PillTag(
     }
 }
 
+
+@Composable
+fun ChatInputBar(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    hasAttachment: Boolean,
+    onAttachClick: () -> Unit,
+    onMicClick: () -> Unit,
+    onSendClick: () -> Unit,
+    isRecording: Boolean,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.material3.Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(100.dp),
+        color = androidx.compose.ui.graphics.Color(0xFF1E293B).copy(alpha = 0.7f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFF334155))
+    ) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp, vertical = 6.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(androidx.compose.ui.graphics.Color(0xFF0F172A))
+                    .clickable { onAttachClick() },
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                androidx.compose.material3.Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Attach",
+                    tint = androidx.compose.ui.graphics.Color(0xFF94A3B8),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(12.dp))
+
+            androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) {
+                if (value.isEmpty()) {
+                    androidx.compose.material3.Text(
+                        text = placeholder,
+                        color = androidx.compose.ui.graphics.Color(0xFF94A3B8),
+                        fontSize = 14.sp
+                    )
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = androidx.compose.ui.graphics.Color.White,
+                        fontSize = 14.sp
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(12.dp))
+
+            androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(androidx.compose.ui.graphics.Color(0xFF0F172A))
+                        .clickable { onMicClick() },
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    if (isRecording) {
+                        androidx.compose.material3.Icon(
+                            imageVector = Icons.Default.GraphicEq,
+                            contentDescription = "Recording",
+                            tint = androidx.compose.ui.graphics.Color(0xFF94A3B8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        androidx.compose.material3.Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Mic",
+                            tint = androidx.compose.ui.graphics.Color(0xFF94A3B8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                val isSendArrow = value.isNotEmpty() || hasAttachment
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(com.example.ui.theme.PrimaryGradient)
+                        .clickable {
+                            if (isSendArrow) onSendClick() else onMicClick()
+                        },
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    androidx.compose.material3.Icon(
+                        imageVector = if (isSendArrow) Icons.AutoMirrored.Filled.Send else if (isRecording) Icons.Default.GraphicEq else Icons.Default.Mic,
+                        contentDescription = if (isSendArrow) "Send" else "Mic",
+                        tint = androidx.compose.ui.graphics.Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}

@@ -311,13 +311,13 @@ fun HomeScreen(
                     questionsCount = 10,
                     streakDays = 5,
                     onStartClick = {
-                        onNavigateScreen(AppScreen.QUIZ_INTERFACE)
+                        onNavigateScreen(AppScreen.DAILY_CHALLENGE)
                     }
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Prototype Quick Screen Switcher for all 8 screens
+                // Prototype Quick Screen Switcher for all screens
                 FloatingCard(
                     modifier = Modifier.fillMaxWidth(),
                     cornerRadius = 20.dp,
@@ -337,7 +337,7 @@ fun HomeScreen(
                                 color = SlateGray
                             )
                             Text(
-                                text = "8 Screens Ready",
+                                text = "All 15 Screens Ready",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = VioletAccent
@@ -404,15 +404,63 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Row 3: Written Answer Practice
+                        // Row 3: Written Practice & Daily Challenge
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             SwitcherChip(
-                                label = "9. Written Practice (Image Upload)",
+                                label = "9. Written Practice",
                                 onClick = { onNavigateScreen(AppScreen.WRITTEN_ANSWER_PRACTICE) },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.weight(1.2f)
+                            )
+                            SwitcherChip(
+                                label = "15. Daily Challenge",
+                                onClick = { onNavigateScreen(AppScreen.DAILY_CHALLENGE) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Row 4: AI Notes Generator & Quick Revision
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            SwitcherChip(
+                                label = "13. AI Notes",
+                                onClick = { onNavigateScreen(AppScreen.AI_NOTES_GENERATOR) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            SwitcherChip(
+                                label = "14. Quick Revision",
+                                onClick = { onNavigateScreen(AppScreen.QUICK_REVISION) },
+                                modifier = Modifier.weight(1.2f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Row 5: Question Bank, Achievements, Admin Panel
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            SwitcherChip(
+                                label = "16. Bank",
+                                onClick = { onNavigateScreen(AppScreen.QUESTION_BANK) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            SwitcherChip(
+                                label = "17. Badges",
+                                onClick = { onNavigateScreen(AppScreen.ACHIEVEMENTS) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            SwitcherChip(
+                                label = "18. Admin Panel",
+                                onClick = { onNavigateScreen(AppScreen.ADMIN_PANEL) },
+                                modifier = Modifier.weight(1.2f)
                             )
                         }
                     }

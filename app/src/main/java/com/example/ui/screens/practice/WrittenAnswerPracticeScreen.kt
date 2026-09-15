@@ -1,4 +1,5 @@
 package com.example.ui.screens.practice
+import androidx.compose.ui.draw.shadow
 
 import android.graphics.Bitmap
 import android.net.Uri
@@ -384,25 +385,27 @@ fun WrittenAnswerPracticeScreen(
                 }
             }
 
-            // Bottom Submit Button
+            var chatInput by remember { mutableStateOf("") }
+            var isRecording by remember { mutableStateOf(false) }
+
+            // Bottom Chat Input Bar
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = CardWhite,
-                shadowElevation = 8.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderLight)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(elevation = 16.dp, ambientColor = Color(0x33000000)),
+                color = Color(0xFF0F172A)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     if (isEvaluating) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(bottom = 12.dp).fillMaxWidth()
                         ) {
                             CircularProgressIndicator(
                                 strokeWidth = 3.dp,
@@ -412,43 +415,37 @@ fun WrittenAnswerPracticeScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = "Evaluating handwritten steps with OCR...",
-                                color = TextOnWhitePrimary,
+                                color = Color.White,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium
                             )
                         }
-                    } else {
-                        GradientButton(
-                            text = "Submit for AI Evaluation",
-                            onClick = {
-                                if (uploadedPages.isEmpty()) {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Please upload at least one answer page.")
-                                    }
-                                    return@GradientButton
-                                }
-                                isEvaluating = true
-                                coroutineScope.launch {
-                                    delay(1200)
-                                    isEvaluating = false
-                                    evaluationResult = "✅ Step 1 (Definition): Correctly stated law of momentum.\n✅ Step 2 (Mathematical Derivation): F = dp/dt = ma derived accurately.\n✅ Step 3 (Impulse Formula): Accurate relationship J = Δp with SI unit.\n💡 Suggestion: Label normal force and gravity vector arrows more clearly in the free body diagram for full marks."
-                                    snackbarHostState.showSnackbar("Evaluation complete!")
-                                }
-                            },
-                            modifier = Modifier
-                                .widthIn(max = 500.dp)
-                                .fillMaxWidth()
-                                .testTag("written_submit_button")
-                        )
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "AI inspects handwritten diagrams, derivations, and step accuracy.",
-                        color = SlateGray,
-                        fontSize = 11.sp,
-                        textAlign = TextAlign.Center
+                    
+                    com.example.ui.components.ChatInputBar(
+                        value = chatInput,
+                        onValueChange = { chatInput = it },
+                        placeholder = "Ask your doubt...",
+                        hasAttachment = uploadedPages.isNotEmpty(),
+                        onAttachClick = { isPickerOpen = true },
+                        onMicClick = { isRecording = !isRecording },
+                        onSendClick = {
+                            if (uploadedPages.isEmpty() && chatInput.isEmpty()) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Please type a message or upload an attachment.")
+                                }
+                                return@ChatInputBar
+                            }
+                            isEvaluating = true
+                            chatInput = ""
+                            coroutineScope.launch {
+                                delay(1200)
+                                isEvaluating = false
+                                evaluationResult = "✅ Step 1 (Definition): Correctly stated law of momentum.\n✅ Step 2 (Mathematical Derivation): F = dp/dt = ma derived accurately.\n✅ Step 3 (Impulse Formula): Accurate relationship J = Δp with SI unit.\n💡 Suggestion: Label normal force and gravity vector arrows more clearly in the free body diagram for full marks."
+                                snackbarHostState.showSnackbar("Evaluation complete!")
+                            }
+                        },
+                        isRecording = isRecording
                     )
                 }
             }

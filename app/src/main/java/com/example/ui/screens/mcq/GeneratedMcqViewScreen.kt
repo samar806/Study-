@@ -790,6 +790,27 @@ fun GeneratedMcqViewScreen(
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
+                    
+                    var chatInput by remember { mutableStateOf("") }
+                    var isRecording by remember { mutableStateOf(false) }
+
+                    com.example.ui.components.ChatInputBar(
+                        value = chatInput,
+                        onValueChange = { chatInput = it },
+                        placeholder = "Ask AI Teacher...",
+                        hasAttachment = false,
+                        onAttachClick = { },
+                        onMicClick = { isRecording = !isRecording },
+                        onSendClick = {
+                            if (chatInput.isNotEmpty()) {
+                                chatInput = ""
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Message sent to AI Teacher!")
+                                }
+                            }
+                        },
+                        isRecording = isRecording
+                    )
                 }
             }
         }

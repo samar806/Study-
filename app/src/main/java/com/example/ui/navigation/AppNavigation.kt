@@ -81,7 +81,14 @@ enum class AppScreen {
     IMAGE_GENERATION,
     GENERATED_MCQ_VIEW,
     QUIZ_INTERFACE,
-    WRITTEN_ANSWER_PRACTICE
+    WRITTEN_ANSWER_PRACTICE,
+    AI_NOTES_GENERATOR,
+    QUICK_REVISION,
+    DAILY_CHALLENGE,
+    QUESTION_BANK,
+    ACHIEVEMENTS,
+    ADMIN_PANEL,
+    DOUBT_SECTION
 }
 
 enum class NavigationTab(
@@ -275,16 +282,28 @@ fun DesktopSidebar(
             )
 
             SidebarSubItem(emoji = "⚡", title = "Generate MCQs") {
-                onTabSelected(NavigationTab.HOME)
+                onNavigateScreen(AppScreen.MCQ_GENERATOR_SETUP)
+            }
+            SidebarSubItem(emoji = "📝", title = "AI Notes Generator") {
+                onNavigateScreen(AppScreen.AI_NOTES_GENERATOR)
+            }
+            SidebarSubItem(emoji = "🔄", title = "Quick Revision") {
+                onNavigateScreen(AppScreen.QUICK_REVISION)
+            }
+            SidebarSubItem(emoji = "🔥", title = "Daily Challenge") {
+                onNavigateScreen(AppScreen.DAILY_CHALLENGE)
             }
             SidebarSubItem(emoji = "📦", title = "Question Bank") {
-                onTabSelected(NavigationTab.PRACTICE)
+                onNavigateScreen(AppScreen.QUESTION_BANK)
             }
             SidebarSubItem(emoji = "🏆", title = "Achievements") {
-                onTabSelected(NavigationTab.PROGRESS)
+                onNavigateScreen(AppScreen.ACHIEVEMENTS)
             }
-            SidebarSubItem(emoji = "⚙️", title = "Settings") {
-                onTabSelected(NavigationTab.PROFILE)
+            SidebarSubItem(emoji = "🛡️", title = "Admin Console") {
+                onNavigateScreen(AppScreen.ADMIN_PANEL)
+            }
+            SidebarSubItem(emoji = "🙋", title = "Ask a Doubt") {
+                onNavigateScreen(AppScreen.DOUBT_SECTION)
             }
 
             Spacer(modifier = Modifier.weight(1f))

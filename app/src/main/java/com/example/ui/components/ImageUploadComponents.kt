@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -585,7 +586,6 @@ fun ImageSourcePickerDialog(
                     title = "NCERT Textbook Sample Page",
                     subtitle = "Preloaded Physics / Chemistry diagram page",
                     onClick = {
-                        onDismiss()
                         val randomSamples = listOf(
                             Triple("Page 44", "Laws of Motion\nConservation of Momentum\nm1v1 + m2v2 = const", Color(0xFFE0E7FF)),
                             Triple("Page 45", "Equilibrium of Particles\nLami's Theorem\nFree Body Analysis", Color(0xFFFEF3C7)),
@@ -594,6 +594,7 @@ fun ImageSourcePickerDialog(
                         )
                         val picked = randomSamples.random()
                         onSelectSample(picked.first, picked.second, picked.third)
+                        onDismiss()
                     },
                     testTag = "picker_option_sample"
                 )
@@ -624,12 +625,12 @@ private fun SourceOptionItem(
     testTag: String
 ) {
     Surface(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, CardBorderLight, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
             .testTag(testTag),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, CardBorderLight),
         color = Color(0xFFF8FAFC)
     ) {
         Row(

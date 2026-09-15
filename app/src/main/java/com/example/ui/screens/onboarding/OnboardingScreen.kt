@@ -81,12 +81,16 @@ fun OnboardingScreen(
     var selectedGrade by remember { mutableStateOf("Class 11") }
     var gradeMenuExpanded by remember { mutableStateOf(false) }
     val gradeOptions = listOf(
+        "Class 6",
+        "Class 7",
+        "Class 8",
         "Class 9",
         "Class 10",
         "Class 11",
         "Class 12",
-        "Dropper / Repeater",
-        "College / Competitive"
+        "NEET",
+        "JEE",
+        "Dropper / Target"
     )
 
     val availableSubjects = listOf(

@@ -327,6 +327,56 @@ fun AIMCQTeacherApp() {
                             onBack = { currentScreen = AppScreen.MAIN_SHELL }
                         )
                     }
+
+                    AppScreen.AI_NOTES_GENERATOR -> {
+                        com.example.ui.screens.notes.AINotesGeneratorScreen(
+                            onBack = { currentScreen = AppScreen.MAIN_SHELL }
+                        )
+                    }
+
+                    AppScreen.QUICK_REVISION -> {
+                        com.example.ui.screens.revision.QuickRevisionScreen(
+                            onBack = { currentScreen = AppScreen.MAIN_SHELL },
+                            onStartQuickQuiz = { currentScreen = AppScreen.QUIZ_INTERFACE }
+                        )
+                    }
+
+                    AppScreen.DAILY_CHALLENGE -> {
+                        com.example.ui.screens.challenge.DailyChallengeScreen(
+                            onBack = { currentScreen = AppScreen.MAIN_SHELL },
+                            onStartChallenge = { currentScreen = AppScreen.QUIZ_INTERFACE }
+                        )
+                    }
+
+                    AppScreen.QUESTION_BANK -> {
+                        com.example.ui.screens.bank.QuestionBankScreen(
+                            onBack = { currentScreen = AppScreen.MAIN_SHELL },
+                            onViewItem = { currentScreen = AppScreen.QUIZ_INTERFACE },
+                            currentTab = currentTab,
+                            onTabSelected = {
+                                currentTab = it
+                                currentScreen = AppScreen.MAIN_SHELL
+                            }
+                        )
+                    }
+
+                    AppScreen.ACHIEVEMENTS -> {
+                        com.example.ui.screens.gamification.AchievementsScreen(
+                            userName = userName,
+                            onBack = { currentScreen = AppScreen.MAIN_SHELL }
+                        )
+                    }
+
+                    AppScreen.ADMIN_PANEL -> {
+                        com.example.ui.screens.admin.AdminPanelScreen(
+                            onBackToApp = { currentScreen = AppScreen.MAIN_SHELL }
+                        )
+                    }
+                    AppScreen.DOUBT_SECTION -> {
+                        com.example.ui.screens.doubt.DoubtSectionScreen(
+                            onBack = { currentScreen = AppScreen.MAIN_SHELL }
+                        )
+                    }
                 }
             }
         }
@@ -354,7 +404,29 @@ fun MainShellContent(
         }
 
         NavigationTab.PRACTICE -> {
-            com.example.ui.screens.practice.WrittenAnswerPracticeScreen(
+            com.example.ui.screens.bank.QuestionBankScreen(
+                onBack = { onNavigateScreen(AppScreen.MAIN_SHELL) },
+                onViewItem = { onNavigateScreen(AppScreen.QUIZ_INTERFACE) },
+                currentTab = currentTab,
+                onTabSelected = { tab ->
+                    if (tab != NavigationTab.PRACTICE) {
+                        onNavigateScreen(AppScreen.MAIN_SHELL)
+                    }
+                },
+                modifier = modifier
+            )
+        }
+
+        NavigationTab.AI_TEACHER -> {
+            com.example.ui.screens.notes.AINotesGeneratorScreen(
+                onBack = { onNavigateScreen(AppScreen.MAIN_SHELL) },
+                modifier = modifier
+            )
+        }
+
+        NavigationTab.PROGRESS -> {
+            com.example.ui.screens.gamification.AchievementsScreen(
+                userName = userName,
                 onBack = { onNavigateScreen(AppScreen.MAIN_SHELL) },
                 modifier = modifier
             )
