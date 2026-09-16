@@ -110,11 +110,11 @@ jobs:
           TITLE="Debug APK Build #${{ github.run_number }}"
           BODY="Automated Debug APK Build
 
-- **Run Number:** ${{ github.run_number }}
-- **Run Attempt:** ${{ github.run_attempt }}
-- **Commit SHA:** ${{ github.sha }}
+          - **Run Number:** ${{ github.run_number }}
+          - **Run Attempt:** ${{ github.run_attempt }}
+          - **Commit SHA:** ${{ github.sha }}
 
-*Note: This is an automatically generated debug build for testing only, signed with a temporary debug keystore, not for Google Play Store distribution.*"
+          *Note: This is an automatically generated debug build for testing only, signed with a temporary debug keystore, not for Google Play Store distribution.*"
 
           gh release create "$TAG" "$ASSET_PATH" \
             --title "$TITLE" \
