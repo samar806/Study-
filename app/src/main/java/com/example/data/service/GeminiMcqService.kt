@@ -693,4 +693,187 @@ class GeminiMcqService(
             "Could not connect to AI Teacher: ${e.message}"
         }
     }
+
+    data class DoubtContextMessage(
+        val text: String,
+        val isUser: Boolean,
+        val attachmentContext: String? = null
+    )
+
+    /**
+     * Context-Aware Real AI Doubt Solver using Gemini.
+     * Incorporates full conversation history, attachment context, and formatting rules.
+     */
+    suspend fun askDoubtWithContext(
+        history: List<DoubtContextMessage>,
+        studentQuery: String,
+        attachmentContext: String? = null
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val systemInstruction = """
+                You are an expert, encouraging AI Teacher assisting a student with their doubts and concepts.
+                
+                STRICT RESPONDING RULES:
+                1. GREETINGS & CASUAL MESSAGES (e.g. "hi", "hello", "hey", "good morning", "how are you"):
+                   - Reply with a short, friendly, natural greeting (1-2 sentences maximum).
+                   - Do NOT give long lectures, definitions, or boilerplate explanations for simple greetings.
+                
+                2. ACADEMIC & CONCEPT DOUBTS (e.g. "cell", "what is gravity", "explain photosynthesis", "Newton's 2nd law"):
+                   - **Direct Answer**: Begin with a concise, direct 1-2 sentence core answer in bold.
+                   - **Conceptual Explanation**: Provide a clear, intuitive breakdown of the underlying concept.
+                   - **Worked Example or Step-by-Step Breakdown**: Include a practical example or numbered steps demonstrating the concept.
+                   - **Formatting**: Use markdown **bold** (**term**) for key terms, formulas, and final answers. Use bullet points or numbered lists for multi-step reasoning.
+                
+                3. ATTACHMENTS & SCANNED NOTES:
+                   - If an attachment description or file content is provided, explicitly reference what is inside it.
+                
+                4. CONVERSATION CONTEXT:
+                   - Maintain continuity with previous turns in the conversation. If the student asks follow-up questions like "why?", "explain step 2", or "give another example", refer to previous answers.
+
+                5. DRAWING & IMAGE REQUESTS ("make a picture of cell", "draw a diagram", "show an image"):
+                   - NEVER say "I am a text-based AI and cannot draw" or "I cannot create images".
+                   - Instead, give a concise 1-2 sentence text overview highlighting the main parts to look for in the diagram.
+                   - A high-resolution labeled educational diagram will automatically be rendered inline alongside your reply by the system.
+            """.trimIndent()
+
+            val effectiveKey = when {
+                apiKey.isNotBlank() && apiKey != "MY_GEMINI_API_KEY" && apiKey != "DEFAULT_API_KEY" -> apiKey
+                !System.getenv("GEMINI_API_KEY").isNullOrBlank() -> System.getenv("GEMINI_API_KEY") ?: ""
+                else -> apiKey
+            }
+
+            val contentsArray = JSONArray()
+
+            // Append recent history turns (up to last 10 turns for context efficiency)
+            val recentHistory = history.takeLast(10)
+            for (msg in recentHistory) {
+                val role = if (msg.isUser) "user" else "model"
+                val textContent = if (msg.isUser && !msg.attachmentContext.isNullOrBlank()) {
+                    "[Attachment: ${msg.attachmentContext}]\n${msg.text}"
+                } else {
+                    msg.text
+                }
+                
+                contentsArray.put(JSONObject().apply {
+                    put("role", role)
+                    put("parts", JSONArray().apply {
+                        put(JSONObject().apply {
+                            put("text", textContent)
+                        })
+                    })
+                })
+            }
+
+            // Append current user message
+            val currentText = if (!attachmentContext.isNullOrBlank()) {
+                "[Attached file/photo: $attachmentContext]\n$studentQuery"
+            } else {
+                studentQuery
+            }
+            contentsArray.put(JSONObject().apply {
+                put("role", "user")
+                put("parts", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("text", currentText)
+                    })
+                })
+            })
+
+            var lastException: Exception? = null
+
+            for (model in MODEL_CANDIDATES) {
+                try {
+                    val url = "$BASE_URL/$model:generateContent?key=$effectiveKey"
+
+                    val jsonBody = JSONObject().apply {
+                        put("contents", contentsArray)
+                        put("systemInstruction", JSONObject().apply {
+                            put("parts", JSONArray().apply {
+                                put(JSONObject().apply {
+                                    put("text", systemInstruction)
+                                })
+                            })
+                        })
+                        put("generationConfig", JSONObject().apply {
+                            put("temperature", 0.5)
+                            put("max_output_tokens", 2048)
+                        })
+                    }
+
+                    val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaType())
+                    val request = Request.Builder()
+                        .url(url)
+                        .post(requestBody)
+                        .build()
+
+                    val response = httpClient.newCall(request).execute()
+                    val responseBody = response.body?.string().orEmpty()
+
+                    if (!response.isSuccessful) {
+                        val errorMsg = try {
+                            val errJson = JSONObject(responseBody)
+                            errJson.optJSONObject("error")?.optString("message") ?: "HTTP ${response.code}"
+                        } catch (e: Exception) {
+                            "HTTP ${response.code}"
+                        }
+                        Log.w(TAG, "Doubt call to $model returned HTTP ${response.code}: $errorMsg")
+                        lastException = Exception(errorMsg)
+                        continue
+                    }
+
+                    val rootJson = JSONObject(responseBody)
+                    val candidates = rootJson.optJSONArray("candidates")
+                    val firstCandidate = candidates?.optJSONObject(0)
+                    val content = firstCandidate?.optJSONObject("content")
+                    val parts = content?.optJSONArray("parts")
+                    val text = parts?.optJSONObject(0)?.optString("text")
+
+                    if (!text.isNullOrBlank()) {
+                        return@withContext Result.success(text.trim())
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Doubt request to $model failed: ${e.message}")
+                    lastException = e
+                }
+            }
+
+            return@withContext Result.failure(
+                lastException ?: Exception("Could not connect to AI Doubt Solver. Please try again.")
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "askDoubtWithContext error", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Generates a labeled educational diagram image URL for a concept doubt.
+     */
+    suspend fun generateEducationalDiagram(
+        conceptTopic: String,
+        seed: Long = System.currentTimeMillis()
+    ): Result<Pair<String, String>> = withContext(Dispatchers.IO) {
+        try {
+            val prompt = "Extract only the main core academic/scientific concept from this query for an educational diagram (return ONLY 2-4 words, e.g. 'Plant Cell Structure' or 'Newton Second Law'): $conceptTopic"
+            val refinedResult = executeRequestWithFallback(prompt, jsonMode = false)
+            val topicTitle = if (refinedResult.isSuccess) {
+                refinedResult.getOrNull()?.trim()?.replace(Regex("[^a-zA-Z0-9 ]"), "") ?: conceptTopic.take(30)
+            } else {
+                conceptTopic.take(30)
+            }
+
+            val sanitizedTopic = topicTitle.ifBlank { "Educational Concept" }.trim()
+            val encodedPrompt = java.net.URLEncoder.encode(
+                "clear simple textbook-style educational diagram of $sanitizedTopic with key parts clearly labeled directly on the image in legible text bold labels, clean white background, high resolution 1024x1024 scientific illustration",
+                "UTF-8"
+            )
+            val imageUrl = "https://image.pollinations.ai/prompt/$encodedPrompt?width=1024&height=1024&nologo=true&seed=$seed"
+            val caption = "Diagram: $sanitizedTopic (Labeled Educational Illustration)"
+
+            Result.success(Pair(imageUrl, caption))
+        } catch (e: Exception) {
+            Log.e(TAG, "generateEducationalDiagram error", e)
+            Result.failure(e)
+        }
+    }
 }
